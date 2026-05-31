@@ -138,10 +138,10 @@ button:active { transform: translateY(0) scale(0.96); }
 
 .cafe-interior {
   position: relative;
-  background: linear-gradient(180deg, #FFF0DC 0%, #FFECD0 100%);
+  background: linear-gradient(180deg, #FFF8F0 0%, #FFF3E6 100%);
   border-radius: 20px;
   padding: 16px;
-  box-shadow: inset 0 0 30px rgba(255, 179, 71, 0.1), 0 4px 16px var(--shadow);
+  box-shadow: inset 0 0 30px rgba(255, 179, 71, 0.08), 0 4px 16px var(--shadow);
   min-height: 180px;
   overflow: hidden;
 }
@@ -247,7 +247,7 @@ button:active { transform: translateY(0) scale(0.96); }
 .customer-sprite.leave-sad { animation: customerLeaveSad 0.7s ease-in forwards; }
 
 /* Chibi animal CSS characters */
-.chibi { position: relative; width: 80px; height: 90px; }
+.chibi { position: relative; width: 80px; height: 90px; filter: drop-shadow(0 2px 4px rgba(92, 64, 51, 0.25)); }
 
 /* Cat - Miki */
 .chibi-cat .body { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 44px; height: 36px; background: #FFE4CC; border-radius: 22px 22px 16px 16px; }
@@ -1013,6 +1013,10 @@ button:active { transform: translateY(0) scale(0.96); }
     <button class="btn-continue" id="btn-continue" style="display:none" onclick="loadGame()">Pokračovat</button>
     <button class="btn-new" onclick="newGame()">Nová hra</button>
   </div>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button onclick="setLang('cs')" style="padding:6px 14px;font-size:13px;background:var(--warm-white);border-radius:10px;opacity:0.8">CZ</button>
+    <button onclick="setLang('en')" style="padding:6px 14px;font-size:13px;background:var(--warm-white);border-radius:10px;opacity:0.8">EN</button>
+  </div>
 </div>
 
 <!-- CAFE SCREEN -->
@@ -1154,6 +1158,167 @@ button:active { transform: translateY(0) scale(0.96); }
 </div>
 
 <script>
+// ===== I18N =====
+let currentLang = localStorage.getItem('cozy_cup_lang') || 'cs';
+
+const I18N = {
+  cs: {
+    // UI
+    title: 'Cozy Cup', tagline: 'tvoje malá kavárna', continue: 'Pokračovat', newGame: 'Nová hra',
+    day: 'Den', morning: 'Ráno', cafe: 'Kavárna', market: 'Trh', garden: 'Zahrádka', decor: 'Dekorace',
+    cup: 'Kelímek', prepare: 'Připravit', preparing: 'Připravuje se...', serve: 'Obsloužit!', clear: 'Vyčistit',
+    pantry: 'Spižírna', dailyGoal: 'Denní cíl', coins: 'mincí',
+    waitingCustomer: 'Čekáme na zákazníka...', newDayStarts: 'Nový den začíná...',
+    wrongRecipe: 'Hmm, to není ono...', customerLeft: 'Zákazník odešel...', notEnoughCoins: 'Nemáš dost mincí!',
+    favorite: 'Oblíbené!', friendship: 'Přátelství',
+    greatDay: 'Skvělý den!', endOfDay: 'Konec dne', nextDay: 'Další den',
+    dayOver: 'je za námi.', served: 'Obslouženo', customers: 'zákazníků', earned: 'Vyděláno',
+    goalMet: 'Denní cíl splněn!', bonus: 'bonus', betterNextTime: 'Příště to bude lepší!',
+    newCustomer: 'Nový zákazník', festivalTips: 'Festivalový den — dvojité tipy!',
+    seasonEnds: 'končí — přichází',
+    // Garden
+    plots: 'Záhony', seedlings: 'Sazenice', plant: '+ Zasadit', harvest: 'Sklizeň!',
+    selectSeedling: 'Vyber sazenici dole', planted: 'zasazen!', daysLeft: 'dny', dayLeft: 'den',
+    // Decor
+    reputation: 'Reputace kavárny', bought: 'Koupeno', buyDecorLabel: 'koupeno!',
+    all: 'Vše', furniture: 'Nábytek', plants: 'Rostliny', lights: 'Světla', walls: 'Stěny', equipment: 'Vybavení',
+    repBuyDecor: 'Kup dekorace pro zvýšení reputace',
+    repCustomers: '+zákazníci', repTips: '+tipy', repTonik: 'Toník přijde', repRare: '+vzácní', repMax: 'Max reputace!',
+    // Festival
+    festival: 'Dvojité tipy dnes!',
+    // Seasons
+    spring: 'Jaro', summer: 'Léto', autumn: 'Podzim', winter: 'Zima',
+    springFest: 'Květinový festival', summerFest: 'Letní slavnost', autumnFest: 'Dýňový festival', winterFest: 'Zimní trhy',
+    // Ingredients
+    i_beans: 'Zrna', i_milk: 'Mléko', i_water: 'Voda', i_sugar: 'Cukr', i_matcha: 'Matcha',
+    i_cocoa: 'Kakao', i_honey: 'Med', i_mint: 'Máta', i_flour: 'Mouka', i_butter: 'Máslo',
+    i_egg: 'Vejce', i_cheese: 'Sýr', i_bread: 'Chleba', i_chocolate: 'Čoko',
+    // Recipes
+    r_espresso: 'Espresso', r_latte: 'Latté', r_matcha_latte: 'Matcha Latté', r_cocoa_drink: 'Kakao',
+    r_mint_tea: 'Mátový čaj', r_honey_latte: 'Medové latté', r_croissant: 'Croissant', r_muffin: 'Muffin',
+    r_cookie: 'Cookie', r_toast: 'Toast s medem', r_cheesecake: 'Cheesecake',
+    r_iced_coffee: 'Ledová káva', r_lemonade: 'Limonáda', r_pumpkin_latte: 'Dýňové latté',
+    r_apple_tea: 'Jablečný čaj', r_hot_choco: 'Horká čoko', r_gingerbread: 'Perníček',
+    r_flower_tea: 'Květinový čaj', r_fruit_muffin: 'Ovocný muffin',
+    // Seedlings
+    s_coffee: 'Kávovník', s_matcha_p: 'Matcha keř', s_cacao: 'Kakaovník',
+    s_mint_p: 'Máta', s_honey_p: 'Včelín', s_wheat: 'Obilí',
+    // Decorations
+    d_table1: 'Kulatý stolek', d_sofa: 'Pohovka', d_shelf: 'Dřevěná police',
+    d_plant1: 'Květináč', d_hanging: 'Závěsná rostlina', d_cactus: 'Kaktus',
+    d_lamp: 'Stojací lampa', d_fairy: 'Světelný řetěz', d_candles: 'Svíčky',
+    d_painting: 'Obraz', d_clock: 'Nástěnné hodiny', d_curtains: 'Záclony',
+    d_espresso2: 'Lepší kávovar', d_grinder: 'Mlýnek', d_oven: 'Trouba',
+    // Decor effects
+    e_capacity1: '+1 kapacita', e_capacity2: '+2 kapacita', e_rep: '+1 reputace',
+    e_tipEvening: '+tipy večer', e_atmosphere: '+atmosféra', e_sell5: '+5 prodej',
+    e_sell3: '+3 prodej', e_foodBonus: '+jídlo bonus',
+    // Customers
+    c_miki: 'Miki', c_bruno: 'Bruno', c_lili: 'Lili', c_rudi: 'Rudi', c_tonik: 'Toník', c_olga: 'Olga',
+  },
+  en: {
+    title: 'Cozy Cup', tagline: 'your little café', continue: 'Continue', newGame: 'New Game',
+    day: 'Day', morning: 'Morning', cafe: 'Café', market: 'Market', garden: 'Garden', decor: 'Decor',
+    cup: 'Cup', prepare: 'Prepare', preparing: 'Preparing...', serve: 'Serve!', clear: 'Clear',
+    pantry: 'Pantry', dailyGoal: 'Daily goal', coins: 'coins',
+    waitingCustomer: 'Waiting for a customer...', newDayStarts: 'New day begins...',
+    wrongRecipe: "Hmm, that's not right...", customerLeft: 'Customer left...', notEnoughCoins: "Not enough coins!",
+    favorite: 'Favorite!', friendship: 'Friendship',
+    greatDay: 'Great day!', endOfDay: 'End of day', nextDay: 'Next day',
+    dayOver: 'is over.', served: 'Served', customers: 'customers', earned: 'Earned',
+    goalMet: 'Daily goal met!', bonus: 'bonus', betterNextTime: "Better luck next time!",
+    newCustomer: 'New customer', festivalTips: 'Festival day — double tips!',
+    seasonEnds: 'ends — here comes',
+    plots: 'Plots', seedlings: 'Seedlings', plant: '+ Plant', harvest: 'Harvest!',
+    selectSeedling: 'Select seedling below', planted: 'planted!', daysLeft: 'days', dayLeft: 'day',
+    reputation: 'Café reputation', bought: 'Owned', buyDecorLabel: 'bought!',
+    all: 'All', furniture: 'Furniture', plants: 'Plants', lights: 'Lights', walls: 'Walls', equipment: 'Equipment',
+    repBuyDecor: 'Buy decorations to increase reputation',
+    repCustomers: '+customers', repTips: '+tips', repTonik: 'Toník visits', repRare: '+rare', repMax: 'Max reputation!',
+    festival: 'Double tips today!',
+    spring: 'Spring', summer: 'Summer', autumn: 'Autumn', winter: 'Winter',
+    springFest: 'Flower Festival', summerFest: 'Summer Party', autumnFest: 'Pumpkin Festival', winterFest: 'Winter Market',
+    i_beans: 'Beans', i_milk: 'Milk', i_water: 'Water', i_sugar: 'Sugar', i_matcha: 'Matcha',
+    i_cocoa: 'Cocoa', i_honey: 'Honey', i_mint: 'Mint', i_flour: 'Flour', i_butter: 'Butter',
+    i_egg: 'Egg', i_cheese: 'Cheese', i_bread: 'Bread', i_chocolate: 'Choco',
+    r_espresso: 'Espresso', r_latte: 'Latte', r_matcha_latte: 'Matcha Latte', r_cocoa_drink: 'Cocoa',
+    r_mint_tea: 'Mint Tea', r_honey_latte: 'Honey Latte', r_croissant: 'Croissant', r_muffin: 'Muffin',
+    r_cookie: 'Cookie', r_toast: 'Honey Toast', r_cheesecake: 'Cheesecake',
+    r_iced_coffee: 'Iced Coffee', r_lemonade: 'Lemonade', r_pumpkin_latte: 'Pumpkin Latte',
+    r_apple_tea: 'Apple Tea', r_hot_choco: 'Hot Chocolate', r_gingerbread: 'Gingerbread',
+    r_flower_tea: 'Flower Tea', r_fruit_muffin: 'Fruit Muffin',
+    s_coffee: 'Coffee Plant', s_matcha_p: 'Matcha Bush', s_cacao: 'Cacao Tree',
+    s_mint_p: 'Mint', s_honey_p: 'Beehive', s_wheat: 'Wheat',
+    d_table1: 'Round Table', d_sofa: 'Sofa', d_shelf: 'Wooden Shelf',
+    d_plant1: 'Flower Pot', d_hanging: 'Hanging Plant', d_cactus: 'Cactus',
+    d_lamp: 'Floor Lamp', d_fairy: 'Fairy Lights', d_candles: 'Candles',
+    d_painting: 'Painting', d_clock: 'Wall Clock', d_curtains: 'Curtains',
+    d_espresso2: 'Better Espresso', d_grinder: 'Grinder', d_oven: 'Oven',
+    e_capacity1: '+1 capacity', e_capacity2: '+2 capacity', e_rep: '+1 reputation',
+    e_tipEvening: '+evening tips', e_atmosphere: '+atmosphere', e_sell5: '+5 sell',
+    e_sell3: '+3 sell', e_foodBonus: '+food bonus',
+    c_miki: 'Miki', c_bruno: 'Bruno', c_lili: 'Lili', c_rudi: 'Rudi', c_tonik: 'Toník', c_olga: 'Olga',
+  }
+};
+
+function t(key) { return I18N[currentLang]?.[key] || I18N.cs[key] || key; }
+function tIngredient(id) { return t('i_' + id); }
+function tRecipe(id) { return t('r_' + id); }
+function tSeedling(id) { return t('s_' + id); }
+function tDecor(id) { return t('d_' + id); }
+function tCustomer(id) { return t('c_' + id); }
+function tSeason(id) { return t(id); }
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('cozy_cup_lang', lang);
+  updateAllText();
+}
+
+function updateAllText() {
+  // Re-render everything with new language
+  if (document.getElementById('cafe-screen').classList.contains('active')) {
+    updateUI(); renderPantry(); renderTables();
+    if (state.currentOrder) showRecipe(state.currentOrder);
+    updateCup();
+  }
+  if (document.getElementById('market-screen')?.classList.contains('active')) renderMarket();
+  if (document.getElementById('garden-screen')?.classList.contains('active')) renderGarden();
+  if (document.getElementById('decor-screen')?.classList.contains('active')) renderDecor();
+  // Update static text
+  const titleTagline = document.querySelector('.title-tagline');
+  if (titleTagline) titleTagline.textContent = t('tagline');
+  const btnNew = document.querySelector('.btn-new');
+  if (btnNew) btnNew.textContent = t('newGame');
+  const btnCont = document.getElementById('btn-continue');
+  if (btnCont) btnCont.textContent = t('continue');
+  // Static labels
+  const cupLabel = document.querySelector('.prep-header h3');
+  if (cupLabel) cupLabel.textContent = t('cup');
+  const pantryLabel = document.querySelector('#cafe-pantry h3');
+  if (pantryLabel) pantryLabel.textContent = t('pantry');
+  const goalLabel = document.getElementById('goal-label');
+  if (goalLabel) goalLabel.textContent = t('dailyGoal');
+  const btnBrew = document.getElementById('btn-brew');
+  if (btnBrew && !state.brewing && !state.brewReady) btnBrew.textContent = t('prepare');
+  const btnClear = document.querySelector('.btn-clear');
+  if (btnClear) btnClear.textContent = t('clear');
+  const eodNext = document.querySelector('.btn-next-day');
+  if (eodNext) eodNext.textContent = t('nextDay');
+  // Nav buttons
+  document.querySelectorAll('#main-nav .nav-btn').forEach(btn => {
+    const tab = btn.dataset.tab;
+    const labelMap = {cafe:'cafe', market:'market', garden:'garden', decor:'decor'};
+    if (labelMap[tab]) {
+      const icon = btn.querySelector('.nav-icon');
+      btn.innerHTML = '';
+      btn.appendChild(icon);
+      btn.appendChild(document.createTextNode(t(labelMap[tab])));
+      btn.dataset.tab = tab;
+    }
+  });
+}
+
 // ===== DATA =====
 const INGREDIENTS = {
   beans:    { name: 'Zrna',    emoji: '☕', price: 3 },
@@ -1161,7 +1326,7 @@ const INGREDIENTS = {
   water:    { name: 'Voda',    emoji: '💧', price: 1 },
   sugar:    { name: 'Cukr',    emoji: '🍬', price: 1 },
   matcha:   { name: 'Matcha',  emoji: '🍵', price: 4 },
-  cocoa:    { name: 'Kakao',   emoji: '🍫', price: 3 },
+  cocoa:    { name: 'Kakao',   emoji: '🫘', price: 3 },
   honey:    { name: 'Med',     emoji: '🍯', price: 2 },
   mint:     { name: 'Máta',    emoji: '🌿', price: 2 },
   flour:    { name: 'Mouka',   emoji: '🌾', price: 2 },
@@ -1176,7 +1341,7 @@ const RECIPES = {
   espresso:     { name: 'Espresso',       needs: ['beans','water'],          sell: 8,  emoji: '☕', type: 'drink' },
   latte:        { name: 'Latté',          needs: ['beans','milk'],           sell: 12, emoji: '☕', type: 'drink' },
   matcha_latte: { name: 'Matcha Latté',   needs: ['matcha','milk'],          sell: 15, emoji: '🍵', type: 'drink' },
-  cocoa_drink:  { name: 'Kakao',          needs: ['cocoa','milk','sugar'],   sell: 14, emoji: '🍫', type: 'drink' },
+  cocoa_drink:  { name: 'Kakao',          needs: ['cocoa','milk','sugar'],   sell: 14, emoji: '☕', type: 'drink' },
   mint_tea:     { name: 'Mátový čaj',     needs: ['mint','water','honey'],   sell: 10, emoji: '🌿', type: 'drink' },
   honey_latte:  { name: 'Medové latté',   needs: ['beans','milk','honey'],   sell: 16, emoji: '🍯', type: 'drink' },
   croissant:    { name: 'Croissant',      needs: ['butter','flour'],         sell: 10, emoji: '🥐', type: 'food' },
@@ -1190,6 +1355,7 @@ const RECIPES = {
   pumpkin_latte:{ name: 'Dýňové latté',  needs: ['beans','milk','sugar'],   sell: 20, emoji: '🎃', type: 'drink', season: 'autumn' },
   apple_tea:    { name: 'Jablečný čaj',  needs: ['water','honey','sugar'],  sell: 12, emoji: '🍎', type: 'drink', season: 'autumn' },
   hot_choco:    { name: 'Horká čoko',    needs: ['cocoa','milk','sugar'],   sell: 16, emoji: '🍫', type: 'drink', season: 'winter' },
+
   gingerbread:  { name: 'Perníček',      needs: ['flour','honey','butter'], sell: 14, emoji: '🍪', type: 'food',  season: 'winter' },
   flower_tea:   { name: 'Květinový čaj', needs: ['water','honey','mint'],   sell: 12, emoji: '🌸', type: 'drink', season: 'spring' },
   fruit_muffin: { name: 'Ovocný muffin', needs: ['flour','sugar','egg'],    sell: 14, emoji: '🫐', type: 'food',  season: 'spring' },
@@ -1720,12 +1886,12 @@ function showRecipe(recipeId) {
   const recipe = RECIPES[recipeId];
   const card = document.getElementById('recipe-card');
   card.style.display = 'flex';
-  document.getElementById('recipe-name').textContent = recipe.emoji + ' ' + recipe.name;
-  document.getElementById('recipe-price').textContent = recipe.sell + ' mincí';
+  document.getElementById('recipe-name').textContent = recipe.emoji + ' ' + tRecipe(recipeId);
+  document.getElementById('recipe-price').textContent = recipe.sell + ' ' + t('coins');
   const needsEl = document.getElementById('recipe-needs');
   needsEl.innerHTML = recipe.needs.map(id => {
     const ing = INGREDIENTS[id];
-    return `<span class="ingredient-chip">${ing.emoji} ${ing.name}</span>`;
+    return `<span class="ingredient-chip">${ing.emoji} ${tIngredient(id)}</span>`;
   }).join('');
 }
 
@@ -1760,7 +1926,7 @@ function updateCup() {
   const ingredientsEl = document.getElementById('cup-ingredients');
   ingredientsEl.innerHTML = state.cup.map(id => {
     const ing = INGREDIENTS[id];
-    return `<span class="chip">${ing.emoji} ${ing.name}</span>`;
+    return `<span class="chip">${ing.emoji} ${tIngredient(id)}</span>`;
   }).join('');
 }
 
@@ -1770,14 +1936,14 @@ function clearCup() {
     state.brewing = false;
     document.getElementById('cup-container').classList.remove('brewing');
     document.getElementById('brew-progress').style.display = 'none';
-    document.getElementById('btn-brew').textContent = 'Připravit';
+    document.getElementById('btn-brew').textContent = t('prepare');
     document.getElementById('btn-brew').style.opacity = '1';
   }
   if (state.brewReady) {
     state.brewReady = false;
     document.getElementById('cup-container').classList.remove('brew-ready');
     document.getElementById('brew-progress').style.display = 'none';
-    document.getElementById('btn-brew').textContent = 'Připravit';
+    document.getElementById('btn-brew').textContent = t('prepare');
     updateNavBadge(false);
   }
   for (const id of state.cup) {
@@ -1810,7 +1976,7 @@ function startBrew() {
   const given = [...state.cup].sort();
 
   if (needed.length !== given.length || !needed.every((v, i) => v === given[i])) {
-    showFeedback('Hmm, to není ono...', 'wrong');
+    showFeedback(t('wrongRecipe'), 'wrong');
     sfxWrong();
     return;
   }
@@ -1822,7 +1988,7 @@ function startBrew() {
   const cupEl = document.getElementById('cup-container');
   cupEl.classList.add('brewing');
   document.getElementById('brew-progress').style.display = 'block';
-  document.getElementById('btn-brew').textContent = 'Připravuje se...';
+  document.getElementById('btn-brew').textContent = t('preparing');
   document.getElementById('btn-brew').style.opacity = '0.6';
   sfxPop();
 
@@ -1837,7 +2003,7 @@ function startBrew() {
       state.brewReady = true;
       cupEl.classList.remove('brewing');
       cupEl.classList.add('brew-ready');
-      document.getElementById('btn-brew').textContent = 'Obsloužit!';
+      document.getElementById('btn-brew').textContent = t('serve');
       document.getElementById('btn-brew').style.opacity = '1';
       sfxServe();
       updateNavBadge(true);
@@ -1892,7 +2058,7 @@ function serve() {
   state.friendships[state.currentCustomerId] = Math.min(3, state.friendships[state.currentCustomerId] + 0.34);
   const newLevel = getFriendshipLevel(state.currentCustomerId);
   if (newLevel > oldLevel) {
-    setTimeout(() => showFeedback(`${customer.name}: Přátelství ${newLevel}!`, 'hearts'), 600);
+    setTimeout(() => showFeedback(`${tCustomer(state.currentCustomerId)}: ${t('friendship')} ${newLevel}!`, 'hearts'), 600);
   }
 
   const rect = document.getElementById('customer-sprite')?.getBoundingClientRect();
@@ -1905,7 +2071,7 @@ function serve() {
   setTimeout(sfxCoins, 300);
   showFeedback(`+${total} mincí`, 'coins');
   if (tip > 0) setTimeout(() => showFeedback(`+${tip} tip!`, 'coins'), 400);
-  if (isFavorite) setTimeout(() => showFeedback('Oblíbené!', 'hearts'), 200);
+  if (isFavorite) setTimeout(() => showFeedback(t('favorite'), 'hearts'), 200);
 
   const sprite = document.getElementById('customer-sprite');
   if (sprite) {
@@ -1922,7 +2088,7 @@ function serve() {
   updateUI();
   updateCup();
   document.getElementById('recipe-card').style.display = 'none';
-  document.getElementById('btn-brew').textContent = 'Připravit';
+  document.getElementById('btn-brew').textContent = t('prepare');
 
   checkDailyGoal();
 
@@ -1944,7 +2110,7 @@ function customerLeaves(happy) {
   state.brewReady = false;
   document.getElementById('cup-container')?.classList.remove('brewing', 'brew-ready');
   document.getElementById('brew-progress').style.display = 'none';
-  document.getElementById('btn-brew').textContent = 'Připravit';
+  document.getElementById('btn-brew').textContent = t('prepare');
   document.getElementById('btn-brew').style.opacity = '1';
   updateNavBadge(false);
 
@@ -1954,7 +2120,7 @@ function customerLeaves(happy) {
     sprite.classList.add(happy ? 'leave-happy' : 'leave-sad');
   }
 
-  if (!happy) showFeedback('Zákazník odešel...', 'wrong');
+  if (!happy) showFeedback(t('customerLeft'), 'wrong');
 
   for (const id of state.cup) {
     state.pantry[id] = (state.pantry[id] || 0) + 1;
@@ -2049,25 +2215,25 @@ function endDay() {
   const nd = state.day + 1;
   const newCustomers = Object.entries(CUSTOMERS)
     .filter(([id, c]) => c.unlocksAtDay === nd)
-    .map(([id, c]) => c.name);
+    .map(([id, c]) => tCustomer(id));
   const unlockMsg = newCustomers.length > 0
-    ? `<br><strong>Nový zákazník: ${newCustomers.join(', ')}!</strong>`
+    ? `<br><strong>${t('newCustomer')}: ${newCustomers.join(', ')}!</strong>`
     : '';
 
   const currentSeason = getCurrentSeason();
   const nextSeasonIdx = (SEASON_ORDER.indexOf(currentSeason) + 1) % 4;
   const isSeasonEnd = getDayInSeason() === DAYS_PER_SEASON;
   const seasonMsg = isSeasonEnd
-    ? `<br><strong>${SEASONS[currentSeason].emoji} ${SEASONS[currentSeason].name} končí — přichází ${SEASONS[SEASON_ORDER[nextSeasonIdx]].emoji} ${SEASONS[SEASON_ORDER[nextSeasonIdx]].name}!</strong>`
+    ? `<br><strong>${SEASONS[currentSeason].emoji} ${tSeason(currentSeason)} ${t('seasonEnds')} ${SEASONS[SEASON_ORDER[nextSeasonIdx]].emoji} ${tSeason(SEASON_ORDER[nextSeasonIdx])}!</strong>`
     : '';
-  const festivalMsg = isFestivalDay() ? '<br>🎉 Festivalový den — dvojité tipy!' : '';
+  const festivalMsg = isFestivalDay() ? `<br>🎉 ${t('festivalTips')}` : '';
 
-  document.getElementById('eod-title').textContent = goalMet ? 'Skvělý den!' : 'Konec dne';
+  document.getElementById('eod-title').textContent = goalMet ? t('greatDay') : t('endOfDay');
   document.getElementById('eod-summary').innerHTML = `
-    Den ${state.day} je za námi.<br>
-    Obslouženo: ${state.dayServed} zákazníků<br>
-    Vyděláno: ${state.dayEarned} mincí<br>
-    ${goalMet ? `<br><strong>Denní cíl splněn! +${bonus} bonus</strong>` : '<br>Příště to bude lepší!'}
+    ${t('day')} ${state.day} ${t('dayOver')}<br>
+    ${t('served')}: ${state.dayServed} ${t('customers')}<br>
+    ${t('earned')}: ${state.dayEarned} ${t('coins')}<br>
+    ${goalMet ? `<br><strong>${t('goalMet')} +${bonus} ${t('bonus')}</strong>` : `<br>${t('betterNextTime')}`}
     ${festivalMsg}
     ${unlockMsg}
     ${seasonMsg}
@@ -2093,12 +2259,12 @@ function nextDay() {
   updateCup();
   renderTables();
   document.getElementById('recipe-card').style.display = 'none';
-  document.getElementById('btn-brew').textContent = 'Připravit';
+  document.getElementById('btn-brew').textContent = t('prepare');
   document.getElementById('btn-brew').style.opacity = '1';
   document.getElementById('brew-progress').style.display = 'none';
 
   const area = document.getElementById('customer-area');
-  area.innerHTML = '<div class="waiting-msg">Nový den začíná...</div>';
+  area.innerHTML = `<div class="waiting-msg">${t('newDayStarts')}</div>`;
 
   setTimeout(() => spawnCustomer(), 1000);
   saveGame();
@@ -2111,9 +2277,9 @@ function renderMarket() {
     const canAfford = state.coins >= ing.price;
     return `<div class="market-item ${canAfford ? '' : 'cant-afford'}" onclick="buyIngredient('${id}')">
       <span class="emoji">${ing.emoji}</span>
-      <span class="name">${ing.name}</span>
-      <span class="price">${ing.price} mincí</span>
-      <span style="font-size:11px;color:var(--sage)">Máš: ${state.pantry[id] || 0}</span>
+      <span class="name">${tIngredient(id)}</span>
+      <span class="price">${ing.price} ${t('coins')}</span>
+      <span style="font-size:11px;color:var(--sage)">${state.pantry[id] || 0}</span>
     </div>`;
   }).join('');
   document.getElementById('market-coins').textContent = state.coins;
@@ -2123,13 +2289,13 @@ function renderMarket() {
 function buyIngredient(id) {
   const ing = INGREDIENTS[id];
   if (state.coins < ing.price) {
-    showFeedback('Nemáš dost mincí!', 'wrong');
+    showFeedback(t('notEnoughCoins'), 'wrong');
     return;
   }
   state.coins -= ing.price;
   state.pantry[id] = (state.pantry[id] || 0) + 1;
   sfxBuy();
-  showFeedback(`+1 ${ing.name}`, 'coins');
+  showFeedback(`+1 ${tIngredient(id)}`, 'coins');
   renderMarket();
   renderPantry();
   updateUI();
@@ -2143,7 +2309,7 @@ function renderPantry() {
     const count = state.pantry[id] || 0;
     return `<div class="pantry-item ${count === 0 ? 'empty' : ''}" onclick="addToCup('${id}')">
       <span class="emoji">${ing.emoji}</span>
-      <span class="name">${ing.name}</span>
+      <span class="name">${tIngredient(id)}</span>
       <span class="count">${count}</span>
     </div>`;
   }).join('');
@@ -2168,12 +2334,13 @@ function applySeason() {
   const s = SEASONS[season];
   document.body.className = `season-${season}`;
   const timeLabel = document.getElementById('time-label');
-  if (timeLabel) timeLabel.textContent = `${s.emoji} ${s.name} (${getDayInSeason()}/${DAYS_PER_SEASON})`;
+  if (timeLabel) timeLabel.textContent = `${s.emoji} ${tSeason(season)} (${getDayInSeason()}/${DAYS_PER_SEASON})`;
   const banner = document.getElementById('festival-banner');
   if (banner) {
     if (isFestivalDay()) {
       banner.style.display = 'block';
-      banner.textContent = `🎉 ${s.festival}! Dvojité tipy dnes! 🎉`;
+      const festName = t(season + 'Fest');
+      banner.textContent = `🎉 ${festName}! ${t('festival')} 🎉`;
     } else {
       banner.style.display = 'none';
     }
@@ -2244,15 +2411,15 @@ function renderGarden() {
     if (status === 'ready') {
       return `<div class="garden-plot ready" onclick="harvestPlot(${i})">
         <span class="plot-plant stage-3">${seedling.stages[2]}</span>
-        <span class="plot-label">${seedling.name}</span>
+        <span class="plot-label">${tSeedling(plot.seedlingId)}</span>
         <span class="plot-days" style="color:var(--sage);font-weight:700">Sklizeň!</span>
       </div>`;
     }
 
     return `<div class="garden-plot planted">
       <span class="plot-plant stage-${stage}">${seedling.stages[stage - 1]}</span>
-      <span class="plot-label">${seedling.name}</span>
-      <span class="plot-days">${daysLeft} ${daysLeft === 1 ? 'den' : 'dny'}</span>
+      <span class="plot-label">${tSeedling(plot.seedlingId)}</span>
+      <span class="plot-days">${daysLeft} ${daysLeft === 1 ? t('dayLeft') : t('daysLeft')}</span>
     </div>`;
   }).join('');
 
@@ -2269,9 +2436,9 @@ function renderSeedlingShop() {
     return `<div class="seedling-item ${canAfford ? '' : 'cant-afford'} ${selected ? 'selected' : ''}"
       onclick="selectSeedling('${id}')" style="${selected ? 'border-color:var(--sage);background:var(--mint)' : ''}">
       <span class="emoji">${s.stages[2]}</span>
-      <span class="name">${s.name}</span>
-      <span class="price">${s.price} mincí</span>
-      <span class="grow-time">${s.growDays} dny &rarr; ${s.harvest}x</span>
+      <span class="name">${tSeedling(id)}</span>
+      <span class="price">${s.price} ${t('coins')}</span>
+      <span class="grow-time">${s.growDays} ${t('daysLeft')} &rarr; ${s.harvest}x</span>
     </div>`;
   }).join('');
 }
@@ -2287,7 +2454,7 @@ function selectSeedling(id) {
 
 function plantSeedling(plotIndex) {
   if (!state.selectedSeedling) {
-    showFeedback('Vyber sazenici dole', 'wrong');
+    showFeedback(t('selectSeedling'), 'wrong');
     return;
   }
   const seedling = SEEDLINGS[state.selectedSeedling];
@@ -2302,8 +2469,9 @@ function plantSeedling(plotIndex) {
     plantedDay: state.day,
     stage: 1,
   };
+  const plantedName = tSeedling(state.selectedSeedling);
   state.selectedSeedling = null;
-  showFeedback(`${seedling.name} zasazen!`, 'coins');
+  showFeedback(`${plantedName} ${t('planted')}`, 'coins');
   renderGarden();
   updateUI();
   saveGame();
@@ -2317,7 +2485,7 @@ function harvestPlot(plotIndex) {
   const ingredientId = seedling.produces;
   state.pantry[ingredientId] = (state.pantry[ingredientId] || 0) + amount;
   sfxHarvest();
-  showFeedback(`+${amount} ${INGREDIENTS[ingredientId].name}!`, 'coins');
+  showFeedback(`+${amount} ${tIngredient(ingredientId)}!`, 'coins');
   state.garden[plotIndex] = { seedlingId: null, plantedDay: 0, stage: 0 };
   renderGarden();
   renderPantry();
@@ -2350,7 +2518,7 @@ function renderDecor() {
   if (rep >= 3) effects.push('Toník přijde');
   if (rep >= 4) effects.push('+vzácní');
   if (rep >= 5) effects.push('Max reputace!');
-  document.getElementById('rep-effect').textContent = effects.length ? effects.join(' | ') : 'Kup dekorace pro zvýšení reputace';
+  document.getElementById('rep-effect').textContent = effects.length ? effects.join(' | ') : t('repBuyDecor');
 
   const catsEl = document.getElementById('decor-categories');
   catsEl.innerHTML = Object.entries(DECOR_CATEGORIES).map(([key, label]) =>
@@ -2366,8 +2534,8 @@ function renderDecor() {
       onclick="${owned ? '' : `buyDecor('${id}')`}">
       ${owned ? '<span class="owned-badge">&#10003;</span>' : ''}
       <span class="emoji">${d.emoji}</span>
-      <span class="name">${d.name}</span>
-      ${owned ? '<span class="price" style="color:var(--sage)">Koupeno</span>' : `<span class="price">${d.price} mincí</span>`}
+      <span class="name">${tDecor(id)}</span>
+      ${owned ? `<span class="price" style="color:var(--sage)">${t('bought')}</span>` : `<span class="price">${d.price} ${t('coins')}</span>`}
       <span class="effect">${d.effect}</span>
     </div>`;
   }).join('');
@@ -2388,7 +2556,7 @@ function buyDecor(id) {
   state.coins -= d.price;
   state.ownedDecor.push(id);
   sfxBuy();
-  showFeedback(`${d.name} koupeno!`, 'coins');
+  showFeedback(`${tDecor(id)} ${t('buyDecorLabel')}`, 'coins');
   renderDecor();
   updateUI();
   saveGame();
