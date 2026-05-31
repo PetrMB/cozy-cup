@@ -430,6 +430,33 @@ button:active { transform: translateY(0) scale(0.97); }
   border-radius: 0 0 8px 8px;
 }
 .cup-container.squash { animation: cupSquash 0.3s ease; }
+.cup-container.brewing { animation: brewShake 0.6s ease-in-out infinite; }
+@keyframes brewShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+.brew-progress {
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: #EDE0D4;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.brew-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--sage), var(--mint));
+  border-radius: 2px;
+  transition: width 0.3s linear;
+}
+.brew-ready { animation: brewReady 0.8s ease-in-out infinite; }
+@keyframes brewReady {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184, 212, 184, 0.4); }
+  50% { box-shadow: 0 0 12px 4px rgba(184, 212, 184, 0.6); }
+}
 @keyframes cupSquash {
   0% { transform: scaleY(1) scaleX(1); }
   40% { transform: scaleY(0.85) scaleX(1.1); }
@@ -838,6 +865,48 @@ button:active { transform: translateY(0) scale(0.97); }
   z-index: 150;
 }
 
+/* Seated customers / tables */
+.cafe-tables {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 8px 0 4px;
+  min-height: 40px;
+}
+.cafe-table {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.6;
+  transition: opacity 0.5s ease;
+}
+.cafe-table.occupied { opacity: 1; }
+.cafe-table .table-icon { font-size: 14px; }
+.cafe-table .seated-chibi {
+  width: 24px;
+  height: 28px;
+  transform: scale(0.35);
+  transform-origin: bottom center;
+  animation: seatedIdle 3s ease-in-out infinite;
+}
+@keyframes seatedIdle {
+  0%, 100% { transform: scale(0.35) translateY(0); }
+  50% { transform: scale(0.35) translateY(-1px); }
+}
+.cafe-table .seated-drink { font-size: 8px; }
+.nav-badge {
+  position: absolute;
+  top: -2px; right: -2px;
+  width: 8px; height: 8px;
+  background: var(--heart-red);
+  border-radius: 50%;
+  animation: badgePulse 1s ease-in-out infinite;
+}
+@keyframes badgePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+.nav-btn { position: relative; }
+
 /* No-customer state */
 .waiting-msg {
   text-align: center;
@@ -889,6 +958,7 @@ button:active { transform: translateY(0) scale(0.97); }
     <div class="customer-area" id="customer-area">
       <div class="waiting-msg" id="waiting-msg">Čekáme na zákazníka...</div>
     </div>
+    <div class="cafe-tables" id="cafe-tables"></div>
   </div>
 
   <div class="recipe-card" id="recipe-card" style="display:none">
@@ -908,11 +978,12 @@ button:active { transform: translateY(0) scale(0.97); }
       <div class="cup-container" id="cup-container">
         <div class="cup-body"><div class="cup-fill" id="cup-fill"></div></div>
         <div class="cup-handle"></div>
+        <div class="brew-progress" id="brew-progress" style="display:none"><div class="brew-progress-fill" id="brew-progress-fill" style="width:0%"></div></div>
       </div>
       <div class="cup-ingredients" id="cup-ingredients"></div>
     </div>
     <div class="prep-buttons">
-      <button class="btn-serve" onclick="serve()">Obsloužit</button>
+      <button class="btn-serve" id="btn-brew" onclick="startBrew()">Připravit</button>
       <button class="btn-clear" onclick="clearCup()">Vyčistit</button>
     </div>
   </div>
@@ -1231,6 +1302,11 @@ let state = {
   selectedSeedling: null,
   ownedDecor: [],
   decorCategory: 'all',
+  brewing: false,
+  brewTimeLeft: 0,
+  brewTimeTotal: 0,
+  brewReady: false,
+  seatedCustomers: [],
 };
 
 // ===== SOUND =====
@@ -1611,6 +1687,21 @@ function updateCup() {
 }
 
 function clearCup() {
+  if (state.brewing) {
+    clearInterval(brewInterval);
+    state.brewing = false;
+    document.getElementById('cup-container').classList.remove('brewing');
+    document.getElementById('brew-progress').style.display = 'none';
+    document.getElementById('btn-brew').textContent = 'Připravit';
+    document.getElementById('btn-brew').style.opacity = '1';
+  }
+  if (state.brewReady) {
+    state.brewReady = false;
+    document.getElementById('cup-container').classList.remove('brew-ready');
+    document.getElementById('brew-progress').style.display = 'none';
+    document.getElementById('btn-brew').textContent = 'Připravit';
+    updateNavBadge(false);
+  }
   for (const id of state.cup) {
     state.pantry[id] = (state.pantry[id] || 0) + 1;
   }
@@ -1619,8 +1710,23 @@ function clearCup() {
   renderPantry();
 }
 
-function serve() {
+// ===== BREWING =====
+let brewInterval = null;
+
+function getBrewTime() {
+  if (!state.currentOrder) return 3;
+  const recipe = RECIPES[state.currentOrder];
+  let base = recipe.needs.length <= 2 ? 3 : (recipe.season ? 7 : 5);
+  if (state.ownedDecor.includes('espresso2') && recipe.type === 'drink') base -= 1;
+  if (state.ownedDecor.includes('oven') && recipe.type === 'food') base -= 1;
+  return Math.max(2, base);
+}
+
+function startBrew() {
   if (!state.currentOrder) return;
+  if (state.brewReady) { serve(); return; }
+  if (state.brewing) return;
+
   const recipe = RECIPES[state.currentOrder];
   const needed = [...recipe.needs].sort();
   const given = [...state.cup].sort();
@@ -1630,6 +1736,59 @@ function serve() {
     sfxWrong();
     return;
   }
+
+  state.brewing = true;
+  state.brewTimeTotal = getBrewTime();
+  state.brewTimeLeft = state.brewTimeTotal;
+
+  const cupEl = document.getElementById('cup-container');
+  cupEl.classList.add('brewing');
+  document.getElementById('brew-progress').style.display = 'block';
+  document.getElementById('btn-brew').textContent = 'Připravuje se...';
+  document.getElementById('btn-brew').style.opacity = '0.6';
+  sfxPop();
+
+  brewInterval = setInterval(() => {
+    state.brewTimeLeft -= 0.1;
+    const pct = Math.max(0, ((state.brewTimeTotal - state.brewTimeLeft) / state.brewTimeTotal) * 100);
+    document.getElementById('brew-progress-fill').style.width = pct + '%';
+
+    if (state.brewTimeLeft <= 0) {
+      clearInterval(brewInterval);
+      state.brewing = false;
+      state.brewReady = true;
+      cupEl.classList.remove('brewing');
+      cupEl.classList.add('brew-ready');
+      document.getElementById('btn-brew').textContent = 'Obsloužit!';
+      document.getElementById('btn-brew').style.opacity = '1';
+      sfxServe();
+      updateNavBadge(true);
+    }
+  }, 100);
+}
+
+function updateNavBadge(show) {
+  const cafeBtn = document.querySelector('#main-nav [data-tab="cafe"]');
+  if (!cafeBtn) return;
+  const existing = cafeBtn.querySelector('.nav-badge');
+  if (show && !existing) {
+    cafeBtn.insertAdjacentHTML('beforeend', '<span class="nav-badge"></span>');
+  } else if (!show && existing) {
+    existing.remove();
+  }
+}
+
+function serve() {
+  if (!state.currentOrder) return;
+  if (!state.brewReady) { startBrew(); return; }
+
+  state.brewReady = false;
+  document.getElementById('brew-progress').style.display = 'none';
+  document.getElementById('brew-progress-fill').style.width = '0%';
+  document.getElementById('cup-container').classList.remove('brew-ready');
+  updateNavBadge(false);
+
+  const recipe = RECIPES[state.currentOrder];
 
   clearInterval(patienceInterval);
 
@@ -1676,6 +1835,8 @@ function serve() {
     sprite.classList.add('leave-happy');
   }
 
+  seatCustomer(state.currentCustomerId);
+
   state.cup = [];
   state.currentOrder = null;
   state.currentCustomerId = null;
@@ -1683,6 +1844,7 @@ function serve() {
   updateUI();
   updateCup();
   document.getElementById('recipe-card').style.display = 'none';
+  document.getElementById('btn-brew').textContent = 'Připravit';
 
   checkDailyGoal();
 
@@ -1699,6 +1861,15 @@ function serve() {
 
 function customerLeaves(happy) {
   clearInterval(patienceInterval);
+  clearInterval(brewInterval);
+  state.brewing = false;
+  state.brewReady = false;
+  document.getElementById('cup-container')?.classList.remove('brewing', 'brew-ready');
+  document.getElementById('brew-progress').style.display = 'none';
+  document.getElementById('btn-brew').textContent = 'Připravit';
+  document.getElementById('btn-brew').style.opacity = '1';
+  updateNavBadge(false);
+
   const sprite = document.getElementById('customer-sprite');
   if (sprite) {
     sprite.classList.remove('idle');
@@ -1733,6 +1904,55 @@ function showFeedback(text, type) {
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 1200);
 }
+
+// ===== CAFE TABLES & SEATING =====
+function getTableCount() {
+  let count = 1;
+  if (state.ownedDecor.includes('table1')) count++;
+  if (state.ownedDecor.includes('sofa')) count++;
+  if (state.ownedDecor.includes('shelf')) count++;
+  return Math.min(count, 4);
+}
+
+function seatCustomer(custId) {
+  if (!custId) return;
+  const tables = getTableCount();
+  if (state.seatedCustomers.length >= tables) return;
+  if (Math.random() > 0.5) return;
+  state.seatedCustomers.push({ id: custId, timer: 30 + Math.floor(Math.random() * 30) });
+  renderTables();
+}
+
+function tickSeatedCustomers() {
+  if (!state.seatedCustomers.length) return;
+  state.seatedCustomers = state.seatedCustomers.filter(sc => {
+    sc.timer--;
+    return sc.timer > 0;
+  });
+  renderTables();
+}
+
+function renderTables() {
+  const el = document.getElementById('cafe-tables');
+  if (!el) return;
+  const tables = getTableCount();
+  let html = '';
+  for (let i = 0; i < tables; i++) {
+    const seated = state.seatedCustomers[i];
+    if (seated) {
+      const c = CUSTOMERS[seated.id];
+      html += `<div class="cafe-table occupied">
+        <div class="seated-chibi">${renderCustomerSprite(seated.id)}</div>
+        <span class="table-icon">☕🪑</span>
+      </div>`;
+    } else {
+      html += `<div class="cafe-table"><span class="table-icon">🪑</span></div>`;
+    }
+  }
+  el.innerHTML = html;
+}
+
+setInterval(tickSeatedCustomers, 1000);
 
 // ===== DAILY GOAL =====
 function checkDailyGoal() {
@@ -1787,10 +2007,17 @@ function nextDay() {
   state.currentOrder = null;
   state.currentCustomerId = null;
   state.cup = [];
+  state.seatedCustomers = [];
+  state.brewing = false;
+  state.brewReady = false;
 
   updateUI();
   updateCup();
+  renderTables();
   document.getElementById('recipe-card').style.display = 'none';
+  document.getElementById('btn-brew').textContent = 'Připravit';
+  document.getElementById('btn-brew').style.opacity = '1';
+  document.getElementById('brew-progress').style.display = 'none';
 
   const area = document.getElementById('customer-area');
   area.innerHTML = '<div class="waiting-msg">Nový den začíná...</div>';
@@ -2143,6 +2370,9 @@ function loadGame() {
     state.dayEarned = 0;
     state.selectedSeedling = null;
     state.decorCategory = 'all';
+    state.brewing = false;
+    state.brewReady = false;
+    state.seatedCustomers = [];
     initGarden();
     startCafe();
   } catch (e) {
@@ -2170,6 +2400,9 @@ function newGame() {
     selectedSeedling: null,
     ownedDecor: [],
     decorCategory: 'all',
+    brewing: false,
+    brewReady: false,
+    seatedCustomers: [],
   };
   initGarden();
   saveGame();
@@ -2184,6 +2417,7 @@ function startCafe() {
   document.getElementById('main-nav').style.display = 'flex';
   updateUI();
   renderPantry();
+  renderTables();
   setTimeout(() => spawnCustomer(), 800);
 }
 
