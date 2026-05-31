@@ -586,6 +586,99 @@ button:active { transform: translateY(0) scale(0.97); }
 .market-item .price { font-size: 12px; color: var(--mocha); }
 .market-item.cant-afford { opacity: 0.5; cursor: not-allowed; }
 
+/* ===== GARDEN SCREEN ===== */
+#garden-screen { gap: 8px; }
+.garden-area {
+  background: linear-gradient(180deg, #E8F5E9 0%, #F1F8E9 50%, var(--cream) 100%);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: inset 0 0 20px rgba(139, 195, 74, 0.1), 0 4px 16px var(--shadow);
+}
+.garden-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+.garden-plot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 4px;
+  background: #D7CCC8;
+  border-radius: 16px;
+  min-height: 100px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+  border: 2px dashed #BCAAA4;
+  position: relative;
+  overflow: hidden;
+}
+.garden-plot:hover { transform: scale(1.03); }
+.garden-plot:active { transform: scale(0.97); }
+.garden-plot.planted {
+  background: #C8B8A4;
+  border-style: solid;
+  border-color: #A1887F;
+}
+.garden-plot.ready {
+  background: linear-gradient(180deg, #C8E6C9, #A5D6A7);
+  border-color: var(--sage);
+  animation: plotReady 1.5s ease-in-out infinite;
+}
+@keyframes plotReady {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 195, 74, 0.3); }
+  50% { box-shadow: 0 0 12px 4px rgba(139, 195, 74, 0.3); }
+}
+.garden-plot.locked {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-style: dotted;
+}
+.plot-plant {
+  font-size: 28px;
+  transition: transform 0.5s ease;
+}
+.plot-plant.stage-1 { transform: scale(0.5); opacity: 0.6; }
+.plot-plant.stage-2 { transform: scale(0.75); opacity: 0.8; }
+.plot-plant.stage-3 { transform: scale(1); opacity: 1; }
+.plot-label { font-size: 9px; font-weight: 700; color: var(--mocha); }
+.plot-days { font-size: 9px; color: var(--mocha); opacity: 0.7; }
+.plot-empty-label { font-size: 11px; color: var(--mocha); opacity: 0.5; }
+
+.seedling-shop {
+  background: var(--panel-bg);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.seedling-shop h3 { font-size: 14px; margin-bottom: 8px; }
+.seedling-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
+}
+.seedling-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  background: var(--warm-white);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  border: 2px solid transparent;
+}
+.seedling-item:hover { background: var(--mint); transform: scale(1.05); }
+.seedling-item:active { transform: scale(0.95); }
+.seedling-item.cant-afford { opacity: 0.4; cursor: not-allowed; }
+.seedling-item .emoji { font-size: 20px; }
+.seedling-item .name { font-size: 9px; font-weight: 600; }
+.seedling-item .price { font-size: 9px; color: var(--mocha); }
+.seedling-item .grow-time { font-size: 8px; color: var(--sage); }
+
 /* ===== END OF DAY MODAL ===== */
 .modal-overlay {
   display: none;
@@ -740,6 +833,7 @@ button:active { transform: translateY(0) scale(0.97); }
   <nav class="nav-bar">
     <button class="nav-btn active" onclick="switchTab('cafe')"><span class="nav-icon">&#9749;</span>Kavárna</button>
     <button class="nav-btn" onclick="switchTab('market')"><span class="nav-icon">&#127978;</span>Trh</button>
+    <button class="nav-btn" onclick="switchTab('garden')"><span class="nav-icon">&#127793;</span>Zahrádka</button>
   </nav>
 </div>
 
@@ -756,6 +850,31 @@ button:active { transform: translateY(0) scale(0.97); }
   <nav class="nav-bar">
     <button class="nav-btn" onclick="switchTab('cafe')"><span class="nav-icon">&#9749;</span>Kavárna</button>
     <button class="nav-btn active" onclick="switchTab('market')"><span class="nav-icon">&#127978;</span>Trh</button>
+  </nav>
+</div>
+
+<!-- GARDEN SCREEN -->
+<div id="garden-screen" class="screen">
+  <div class="top-bar">
+    <div class="stat"><span class="stat-icon">&#128176;</span> <span id="garden-coins">0</span></div>
+    <div class="stat"><span class="stat-icon">&#128197;</span> Den <span id="garden-day">1</span></div>
+    <div class="stat">&#127793; Zahrádka</div>
+  </div>
+
+  <div class="garden-area">
+    <h3 style="font-size:14px;margin-bottom:10px">Záhony</h3>
+    <div class="garden-grid" id="garden-grid"></div>
+  </div>
+
+  <div class="seedling-shop">
+    <h3>Sazenice</h3>
+    <div class="seedling-grid" id="seedling-grid"></div>
+  </div>
+
+  <nav class="nav-bar">
+    <button class="nav-btn" onclick="switchTab('cafe')"><span class="nav-icon">&#9749;</span>Kavárna</button>
+    <button class="nav-btn" onclick="switchTab('market')"><span class="nav-icon">&#127978;</span>Trh</button>
+    <button class="nav-btn active" onclick="switchTab('garden')"><span class="nav-icon">&#127793;</span>Zahrádka</button>
   </nav>
 </div>
 
@@ -800,6 +919,17 @@ const RECIPES = {
   toast:        { name: 'Toast s medem',  needs: ['bread','honey'],          sell: 7,  emoji: '🍞', type: 'food' },
   cheesecake:   { name: 'Cheesecake',     needs: ['cheese','sugar','butter'], sell: 18, emoji: '🍰', type: 'food' },
 };
+
+const SEEDLINGS = {
+  coffee:   { name: 'Kávovník',    emoji: '🌱', price: 8,  growDays: 3, produces: 'beans',  harvest: 3, stages: ['🌱','🌿','☕'] },
+  matcha_p: { name: 'Matcha keř',  emoji: '🌱', price: 10, growDays: 4, produces: 'matcha', harvest: 2, stages: ['🌱','🍃','🍵'] },
+  cacao:    { name: 'Kakaovník',   emoji: '🌱', price: 10, growDays: 5, produces: 'cocoa',  harvest: 2, stages: ['🌱','🌳','🍫'] },
+  mint_p:   { name: 'Máta',        emoji: '🌱', price: 6,  growDays: 2, produces: 'mint',   harvest: 3, stages: ['🌱','🌿','🌿'] },
+  honey_p:  { name: 'Včelín',      emoji: '🌱', price: 12, growDays: 5, produces: 'honey',  harvest: 2, stages: ['🌱','🐝','🍯'] },
+  wheat:    { name: 'Obilí',       emoji: '🌱', price: 5,  growDays: 2, produces: 'flour',  harvest: 3, stages: ['🌱','🌾','🌾'] },
+};
+
+const MAX_PLOTS = 6;
 
 const CUSTOMERS = {
   miki: {
@@ -934,6 +1064,8 @@ let state = {
   friendships: {},
   dayServed: 0,
   dayEarned: 0,
+  garden: [],
+  selectedSeedling: null,
 };
 
 // ===== PARTICLES =====
@@ -1450,15 +1582,151 @@ function updateUI() {
   checkDailyGoal();
 }
 
+// ===== GARDEN =====
+function initGarden() {
+  if (!state.garden || state.garden.length === 0) {
+    state.garden = [];
+    for (let i = 0; i < MAX_PLOTS; i++) {
+      state.garden.push({ seedlingId: null, plantedDay: 0, stage: 0 });
+    }
+  }
+}
+
+function getPlotStatus(plot) {
+  if (!plot.seedlingId) return 'empty';
+  const seedling = SEEDLINGS[plot.seedlingId];
+  const daysPassed = state.day - plot.plantedDay;
+  if (daysPassed >= seedling.growDays) return 'ready';
+  return 'growing';
+}
+
+function getPlotStage(plot) {
+  if (!plot.seedlingId) return 0;
+  const seedling = SEEDLINGS[plot.seedlingId];
+  const daysPassed = state.day - plot.plantedDay;
+  if (daysPassed >= seedling.growDays) return 3;
+  if (daysPassed >= Math.floor(seedling.growDays * 0.5)) return 2;
+  return 1;
+}
+
+function renderGarden() {
+  initGarden();
+  const grid = document.getElementById('garden-grid');
+  const unlockedPlots = state.day >= 3 ? (state.day >= 20 ? 6 : (state.day >= 10 ? 4 : 2)) : 0;
+
+  grid.innerHTML = state.garden.map((plot, i) => {
+    if (i >= unlockedPlots) {
+      const unlockDay = i < 2 ? 3 : (i < 4 ? 10 : 20);
+      return `<div class="garden-plot locked">
+        <span class="plot-empty-label">&#128274;</span>
+        <span class="plot-days">Den ${unlockDay}</span>
+      </div>`;
+    }
+
+    const status = getPlotStatus(plot);
+    const stage = getPlotStage(plot);
+
+    if (status === 'empty') {
+      return `<div class="garden-plot" onclick="plantSeedling(${i})">
+        <span class="plot-empty-label">+ Zasadit</span>
+      </div>`;
+    }
+
+    const seedling = SEEDLINGS[plot.seedlingId];
+    const daysLeft = Math.max(0, seedling.growDays - (state.day - plot.plantedDay));
+
+    if (status === 'ready') {
+      return `<div class="garden-plot ready" onclick="harvestPlot(${i})">
+        <span class="plot-plant stage-3">${seedling.stages[2]}</span>
+        <span class="plot-label">${seedling.name}</span>
+        <span class="plot-days" style="color:var(--sage);font-weight:700">Sklizeň!</span>
+      </div>`;
+    }
+
+    return `<div class="garden-plot planted">
+      <span class="plot-plant stage-${stage}">${seedling.stages[stage - 1]}</span>
+      <span class="plot-label">${seedling.name}</span>
+      <span class="plot-days">${daysLeft} ${daysLeft === 1 ? 'den' : 'dny'}</span>
+    </div>`;
+  }).join('');
+
+  renderSeedlingShop();
+  document.getElementById('garden-coins').textContent = state.coins;
+  document.getElementById('garden-day').textContent = state.day;
+}
+
+function renderSeedlingShop() {
+  const grid = document.getElementById('seedling-grid');
+  grid.innerHTML = Object.entries(SEEDLINGS).map(([id, s]) => {
+    const canAfford = state.coins >= s.price;
+    const selected = state.selectedSeedling === id;
+    return `<div class="seedling-item ${canAfford ? '' : 'cant-afford'} ${selected ? 'selected' : ''}"
+      onclick="selectSeedling('${id}')" style="${selected ? 'border-color:var(--sage);background:var(--mint)' : ''}">
+      <span class="emoji">${s.stages[2]}</span>
+      <span class="name">${s.name}</span>
+      <span class="price">${s.price} mincí</span>
+      <span class="grow-time">${s.growDays} dny &rarr; ${s.harvest}x</span>
+    </div>`;
+  }).join('');
+}
+
+function selectSeedling(id) {
+  if (state.coins < SEEDLINGS[id].price) {
+    showFeedback('Nemáš dost mincí!', 'wrong');
+    return;
+  }
+  state.selectedSeedling = state.selectedSeedling === id ? null : id;
+  renderGarden();
+}
+
+function plantSeedling(plotIndex) {
+  if (!state.selectedSeedling) {
+    showFeedback('Vyber sazenici dole', 'wrong');
+    return;
+  }
+  const seedling = SEEDLINGS[state.selectedSeedling];
+  if (state.coins < seedling.price) {
+    showFeedback('Nemáš dost mincí!', 'wrong');
+    return;
+  }
+  state.coins -= seedling.price;
+  state.garden[plotIndex] = {
+    seedlingId: state.selectedSeedling,
+    plantedDay: state.day,
+    stage: 1,
+  };
+  state.selectedSeedling = null;
+  showFeedback(`${seedling.name} zasazen!`, 'coins');
+  renderGarden();
+  updateUI();
+  saveGame();
+}
+
+function harvestPlot(plotIndex) {
+  const plot = state.garden[plotIndex];
+  if (!plot.seedlingId) return;
+  const seedling = SEEDLINGS[plot.seedlingId];
+  const amount = seedling.harvest;
+  const ingredientId = seedling.produces;
+  state.pantry[ingredientId] = (state.pantry[ingredientId] || 0) + amount;
+  showFeedback(`+${amount} ${INGREDIENTS[ingredientId].name}!`, 'coins');
+  state.garden[plotIndex] = { seedlingId: null, plantedDay: 0, stage: 0 };
+  renderGarden();
+  renderPantry();
+  saveGame();
+}
+
 function switchTab(tab) {
   document.getElementById('cafe-screen').classList.toggle('active', tab === 'cafe');
   document.getElementById('market-screen').classList.toggle('active', tab === 'market');
+  document.getElementById('garden-screen').classList.toggle('active', tab === 'garden');
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.remove('active');
     const btnTab = btn.getAttribute('onclick')?.includes(tab);
     if (btnTab) btn.classList.add('active');
   });
   if (tab === 'market') renderMarket();
+  if (tab === 'garden') renderGarden();
 }
 
 // ===== SAVE / LOAD =====
@@ -1473,7 +1741,8 @@ function saveGame() {
     goal: state.goal,
     pantry: state.pantry,
     friendships: state.friendships,
-    version: 1,
+    garden: state.garden,
+    version: 2,
   };
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
@@ -1491,11 +1760,14 @@ function loadGame() {
     state.goal = data.goal || 3;
     state.pantry = data.pantry || {};
     state.friendships = data.friendships || {};
+    state.garden = data.garden || [];
     state.cup = [];
     state.currentOrder = null;
     state.currentCustomerId = null;
     state.dayServed = 0;
     state.dayEarned = 0;
+    state.selectedSeedling = null;
+    initGarden();
     startCafe();
   } catch (e) {
     newGame();
@@ -1518,7 +1790,10 @@ function newGame() {
     friendships: {},
     dayServed: 0,
     dayEarned: 0,
+    garden: [],
+    selectedSeedling: null,
   };
+  initGarden();
   saveGame();
   startCafe();
 }
