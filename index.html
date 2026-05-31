@@ -679,6 +679,65 @@ button:active { transform: translateY(0) scale(0.97); }
 .seedling-item .price { font-size: 9px; color: var(--mocha); }
 .seedling-item .grow-time { font-size: 8px; color: var(--sage); }
 
+/* ===== DECOR SCREEN ===== */
+#decor-screen { gap: 8px; }
+.reputation-bar {
+  background: var(--panel-bg);
+  border-radius: 16px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.reputation-bar h3 { font-size: 14px; margin-bottom: 6px; }
+.rep-stars { font-size: 20px; letter-spacing: 4px; }
+.rep-stars .star-empty { opacity: 0.25; }
+.rep-effect { font-size: 11px; color: var(--mocha); margin-top: 4px; }
+
+.decor-categories { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.decor-cat-btn {
+  padding: 6px 12px;
+  background: var(--warm-white);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mocha);
+}
+.decor-cat-btn.active { background: var(--peach); color: var(--dark-mocha); }
+
+.decor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex: 1;
+  overflow-y: auto;
+}
+.decor-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  background: var(--panel-bg);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px var(--shadow);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  border: 2px solid transparent;
+  position: relative;
+}
+.decor-item:hover { transform: scale(1.03); }
+.decor-item:active { transform: scale(0.97); }
+.decor-item.owned { border-color: var(--sage); background: #F0FFF0; }
+.decor-item.cant-afford { opacity: 0.45; cursor: not-allowed; }
+.decor-item .emoji { font-size: 28px; }
+.decor-item .name { font-size: 11px; font-weight: 700; }
+.decor-item .price { font-size: 11px; color: var(--mocha); }
+.decor-item .effect { font-size: 9px; color: var(--sage); }
+.decor-item .owned-badge {
+  position: absolute;
+  top: 4px; right: 4px;
+  font-size: 12px;
+}
+
 /* ===== END OF DAY MODAL ===== */
 .modal-overlay {
   display: none;
@@ -834,6 +893,7 @@ button:active { transform: translateY(0) scale(0.97); }
     <button class="nav-btn active" onclick="switchTab('cafe')"><span class="nav-icon">&#9749;</span>Kavárna</button>
     <button class="nav-btn" onclick="switchTab('market')"><span class="nav-icon">&#127978;</span>Trh</button>
     <button class="nav-btn" onclick="switchTab('garden')"><span class="nav-icon">&#127793;</span>Zahrádka</button>
+    <button class="nav-btn" onclick="switchTab('decor')"><span class="nav-icon">&#127912;</span>Dekorace</button>
   </nav>
 </div>
 
@@ -875,6 +935,31 @@ button:active { transform: translateY(0) scale(0.97); }
     <button class="nav-btn" onclick="switchTab('cafe')"><span class="nav-icon">&#9749;</span>Kavárna</button>
     <button class="nav-btn" onclick="switchTab('market')"><span class="nav-icon">&#127978;</span>Trh</button>
     <button class="nav-btn active" onclick="switchTab('garden')"><span class="nav-icon">&#127793;</span>Zahrádka</button>
+  </nav>
+</div>
+
+<!-- DECOR SCREEN -->
+<div id="decor-screen" class="screen">
+  <div class="top-bar">
+    <div class="stat"><span class="stat-icon">&#128176;</span> <span id="decor-coins">0</span></div>
+    <div class="stat"><span class="stat-icon">&#128197;</span> Den <span id="decor-day">1</span></div>
+    <div class="stat">&#127912; Dekorace</div>
+  </div>
+
+  <div class="reputation-bar">
+    <h3>Reputace kavárny</h3>
+    <div class="rep-stars" id="rep-stars"></div>
+    <div class="rep-effect" id="rep-effect"></div>
+  </div>
+
+  <div class="decor-categories" id="decor-categories"></div>
+  <div class="decor-grid" id="decor-grid"></div>
+
+  <nav class="nav-bar">
+    <button class="nav-btn" onclick="switchTab('cafe')"><span class="nav-icon">&#9749;</span>Kavárna</button>
+    <button class="nav-btn" onclick="switchTab('market')"><span class="nav-icon">&#127978;</span>Trh</button>
+    <button class="nav-btn" onclick="switchTab('garden')"><span class="nav-icon">&#127793;</span>Zahrádka</button>
+    <button class="nav-btn active" onclick="switchTab('decor')"><span class="nav-icon">&#127912;</span>Dekorace</button>
   </nav>
 </div>
 
@@ -930,6 +1015,33 @@ const SEEDLINGS = {
 };
 
 const MAX_PLOTS = 6;
+
+const DECORATIONS = {
+  table1:    { name: 'Kulatý stolek',   emoji: '🪑', price: 20, category: 'furniture', rep: 1, effect: '+1 kapacita' },
+  sofa:      { name: 'Pohovka',         emoji: '🛋️', price: 35, category: 'furniture', rep: 2, effect: '+2 kapacita' },
+  shelf:     { name: 'Dřevěná police',  emoji: '📚', price: 15, category: 'furniture', rep: 1, effect: '+1 reputace' },
+  plant1:    { name: 'Květináč',        emoji: '🪴', price: 12, category: 'plants',    rep: 1, effect: '+1 reputace' },
+  hanging:   { name: 'Závěsná rostlina',emoji: '🌿', price: 18, category: 'plants',    rep: 1, effect: '+1 reputace' },
+  cactus:    { name: 'Kaktus',          emoji: '🌵', price: 8,  category: 'plants',    rep: 1, effect: '+1 reputace' },
+  lamp:      { name: 'Stojací lampa',   emoji: '💡', price: 22, category: 'lights',    rep: 1, effect: '+tipy večer' },
+  fairy:     { name: 'Světelný řetěz',  emoji: '✨', price: 30, category: 'lights',    rep: 2, effect: '+tipy večer' },
+  candles:   { name: 'Svíčky',          emoji: '🕯️', price: 10, category: 'lights',    rep: 1, effect: '+atmosféra' },
+  painting:  { name: 'Obraz',           emoji: '🖼️', price: 25, category: 'walls',     rep: 1, effect: '+1 reputace' },
+  clock:     { name: 'Nástěnné hodiny', emoji: '🕰️', price: 15, category: 'walls',     rep: 1, effect: '+1 reputace' },
+  curtains:  { name: 'Záclony',         emoji: '🪟', price: 20, category: 'walls',     rep: 1, effect: '+útulnost' },
+  espresso2: { name: 'Lepší kávovar',   emoji: '☕', price: 50, category: 'equipment', rep: 2, effect: '+5 prodej' },
+  grinder:   { name: 'Mlýnek',          emoji: '⚙️', price: 40, category: 'equipment', rep: 1, effect: '+3 prodej' },
+  oven:      { name: 'Trouba',          emoji: '🍳', price: 45, category: 'equipment', rep: 2, effect: '+jídlo bonus' },
+};
+
+const DECOR_CATEGORIES = {
+  all:       'Vše',
+  furniture: 'Nábytek',
+  plants:    'Rostliny',
+  lights:    'Světla',
+  walls:     'Stěny',
+  equipment: 'Vybavení',
+};
 
 const CUSTOMERS = {
   miki: {
@@ -1066,6 +1178,8 @@ let state = {
   dayEarned: 0,
   garden: [],
   selectedSeedling: null,
+  ownedDecor: [],
+  decorCategory: 'all',
 };
 
 // ===== PARTICLES =====
@@ -1386,7 +1500,8 @@ function serve() {
   const friendBonus = friendLevel * 2;
   const isFavorite = state.currentOrder === customer.favorite;
   const favBonus = isFavorite ? 5 : 0;
-  const tip = Math.round(recipe.sell * (customer.tipMultiplier - 1)) + speedBonus + friendBonus + favBonus;
+  const repBonus = getReputation();
+  const tip = Math.round(recipe.sell * (customer.tipMultiplier - 1)) + speedBonus + friendBonus + favBonus + repBonus;
   const total = recipe.sell + tip;
 
   state.coins += total;
@@ -1716,10 +1831,80 @@ function harvestPlot(plotIndex) {
   saveGame();
 }
 
+// ===== DECORATIONS =====
+function getReputation() {
+  if (!state.ownedDecor) return 0;
+  let total = 0;
+  for (const id of state.ownedDecor) {
+    if (DECORATIONS[id]) total += DECORATIONS[id].rep;
+  }
+  return Math.min(5, total);
+}
+
+function renderDecor() {
+  const cat = state.decorCategory || 'all';
+  document.getElementById('decor-coins').textContent = state.coins;
+  document.getElementById('decor-day').textContent = state.day;
+
+  const rep = getReputation();
+  document.getElementById('rep-stars').innerHTML = [1,2,3,4,5].map(i =>
+    `<span class="${i <= rep ? '' : 'star-empty'}">&#11088;</span>`
+  ).join('');
+
+  const effects = [];
+  if (rep >= 1) effects.push('+zákazníci');
+  if (rep >= 2) effects.push('+tipy');
+  if (rep >= 3) effects.push('Toník přijde');
+  if (rep >= 4) effects.push('+vzácní');
+  if (rep >= 5) effects.push('Max reputace!');
+  document.getElementById('rep-effect').textContent = effects.length ? effects.join(' | ') : 'Kup dekorace pro zvýšení reputace';
+
+  const catsEl = document.getElementById('decor-categories');
+  catsEl.innerHTML = Object.entries(DECOR_CATEGORIES).map(([key, label]) =>
+    `<button class="decor-cat-btn ${cat === key ? 'active' : ''}" onclick="setDecorCategory('${key}')">${label}</button>`
+  ).join('');
+
+  const grid = document.getElementById('decor-grid');
+  const items = Object.entries(DECORATIONS).filter(([id, d]) => cat === 'all' || d.category === cat);
+  grid.innerHTML = items.map(([id, d]) => {
+    const owned = state.ownedDecor.includes(id);
+    const canAfford = state.coins >= d.price;
+    return `<div class="decor-item ${owned ? 'owned' : ''} ${!owned && !canAfford ? 'cant-afford' : ''}"
+      onclick="${owned ? '' : `buyDecor('${id}')`}">
+      ${owned ? '<span class="owned-badge">&#10003;</span>' : ''}
+      <span class="emoji">${d.emoji}</span>
+      <span class="name">${d.name}</span>
+      ${owned ? '<span class="price" style="color:var(--sage)">Koupeno</span>' : `<span class="price">${d.price} mincí</span>`}
+      <span class="effect">${d.effect}</span>
+    </div>`;
+  }).join('');
+}
+
+function setDecorCategory(cat) {
+  state.decorCategory = cat;
+  renderDecor();
+}
+
+function buyDecor(id) {
+  const d = DECORATIONS[id];
+  if (state.ownedDecor.includes(id)) return;
+  if (state.coins < d.price) {
+    showFeedback('Nemáš dost mincí!', 'wrong');
+    return;
+  }
+  state.coins -= d.price;
+  state.ownedDecor.push(id);
+  showFeedback(`${d.name} koupeno!`, 'coins');
+  renderDecor();
+  updateUI();
+  saveGame();
+}
+
 function switchTab(tab) {
   document.getElementById('cafe-screen').classList.toggle('active', tab === 'cafe');
   document.getElementById('market-screen').classList.toggle('active', tab === 'market');
   document.getElementById('garden-screen').classList.toggle('active', tab === 'garden');
+  document.getElementById('decor-screen').classList.toggle('active', tab === 'decor');
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.remove('active');
     const btnTab = btn.getAttribute('onclick')?.includes(tab);
@@ -1727,6 +1912,7 @@ function switchTab(tab) {
   });
   if (tab === 'market') renderMarket();
   if (tab === 'garden') renderGarden();
+  if (tab === 'decor') renderDecor();
 }
 
 // ===== SAVE / LOAD =====
@@ -1742,7 +1928,8 @@ function saveGame() {
     pantry: state.pantry,
     friendships: state.friendships,
     garden: state.garden,
-    version: 2,
+    ownedDecor: state.ownedDecor,
+    version: 3,
   };
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
@@ -1761,12 +1948,14 @@ function loadGame() {
     state.pantry = data.pantry || {};
     state.friendships = data.friendships || {};
     state.garden = data.garden || [];
+    state.ownedDecor = data.ownedDecor || [];
     state.cup = [];
     state.currentOrder = null;
     state.currentCustomerId = null;
     state.dayServed = 0;
     state.dayEarned = 0;
     state.selectedSeedling = null;
+    state.decorCategory = 'all';
     initGarden();
     startCafe();
   } catch (e) {
@@ -1792,6 +1981,8 @@ function newGame() {
     dayEarned: 0,
     garden: [],
     selectedSeedling: null,
+    ownedDecor: [],
+    decorCategory: 'all',
   };
   initGarden();
   saveGame();
