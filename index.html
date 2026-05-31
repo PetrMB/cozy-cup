@@ -876,6 +876,7 @@ button:active { transform: translateY(0) scale(0.97); }
     <div class="stat"><span class="stat-icon">&#128176;</span> <span id="coins">0</span></div>
     <div class="stat"><span class="stat-icon">&#128197;</span> Den <span id="day">1</span></div>
     <div class="stat" id="time-display"><span class="stat-icon">&#9728;&#65039;</span> <span id="time-label">Ráno</span></div>
+    <button onclick="soundEnabled=!soundEnabled; this.textContent=soundEnabled?'🔊':'🔇'" style="background:none;padding:2px 6px;font-size:16px;box-shadow:none">🔊</button>
   </div>
 
   <div class="festival-banner" id="festival-banner" style="display:none"></div>
@@ -1232,6 +1233,83 @@ let state = {
   decorCategory: 'all',
 };
 
+// ===== SOUND =====
+let audioCtx = null;
+let soundEnabled = true;
+
+function initAudio() {
+  if (audioCtx) return;
+  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+}
+
+function playTone(freq, duration, type, volume) {
+  if (!soundEnabled || !audioCtx) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  gain.gain.setValueAtTime(volume || 0.15, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+function sfxServe() {
+  playTone(880, 0.1, 'sine', 0.12);
+  setTimeout(() => playTone(1100, 0.1, 'sine', 0.12), 80);
+  setTimeout(() => playTone(1320, 0.15, 'sine', 0.1), 160);
+}
+
+function sfxCoins() {
+  playTone(1200, 0.08, 'square', 0.06);
+  setTimeout(() => playTone(1500, 0.08, 'square', 0.06), 60);
+  setTimeout(() => playTone(1800, 0.12, 'square', 0.05), 120);
+}
+
+function sfxWrong() {
+  playTone(300, 0.15, 'sawtooth', 0.08);
+  setTimeout(() => playTone(250, 0.2, 'sawtooth', 0.06), 100);
+}
+
+function sfxPop() {
+  playTone(600, 0.06, 'sine', 0.1);
+  setTimeout(() => playTone(900, 0.08, 'sine', 0.08), 40);
+}
+
+function sfxPlant() {
+  playTone(400, 0.1, 'sine', 0.1);
+  setTimeout(() => playTone(500, 0.1, 'sine', 0.1), 80);
+  setTimeout(() => playTone(700, 0.15, 'sine', 0.08), 160);
+}
+
+function sfxHarvest() {
+  playTone(500, 0.08, 'sine', 0.1);
+  setTimeout(() => playTone(700, 0.08, 'sine', 0.1), 60);
+  setTimeout(() => playTone(900, 0.08, 'sine', 0.1), 120);
+  setTimeout(() => playTone(1200, 0.15, 'sine', 0.08), 180);
+}
+
+function sfxBuy() {
+  playTone(800, 0.06, 'triangle', 0.1);
+  setTimeout(() => playTone(600, 0.1, 'triangle', 0.08), 60);
+}
+
+function sfxCustomerArrive() {
+  playTone(440, 0.08, 'sine', 0.08);
+  setTimeout(() => playTone(550, 0.08, 'sine', 0.08), 80);
+  setTimeout(() => playTone(660, 0.1, 'sine', 0.06), 160);
+}
+
+function sfxEndDay() {
+  playTone(523, 0.15, 'sine', 0.1);
+  setTimeout(() => playTone(659, 0.15, 'sine', 0.1), 150);
+  setTimeout(() => playTone(784, 0.15, 'sine', 0.1), 300);
+  setTimeout(() => playTone(1047, 0.3, 'sine', 0.08), 450);
+}
+
 // ===== PARTICLES =====
 const particleCanvas = document.getElementById('particles');
 const pctx = particleCanvas.getContext('2d');
@@ -1441,6 +1519,7 @@ function renderFriendshipHearts(custId) {
 }
 
 function spawnCustomer() {
+  sfxCustomerArrive();
   const available = getAvailableCustomers();
   const custId = available[Math.floor(Math.random() * available.length)];
   const customer = CUSTOMERS[custId];
@@ -1505,6 +1584,7 @@ function addToCup(ingredientId) {
 
   state.pantry[ingredientId]--;
   state.cup.push(ingredientId);
+  sfxPop();
 
   const cupEl = document.getElementById('cup-container');
   cupEl.classList.remove('squash');
@@ -1547,6 +1627,7 @@ function serve() {
 
   if (needed.length !== given.length || !needed.every((v, i) => v === given[i])) {
     showFeedback('Hmm, to není ono...', 'wrong');
+    sfxWrong();
     return;
   }
 
@@ -1583,6 +1664,8 @@ function serve() {
     spawnParticles(rect.left + rect.width / 2, rect.top - 20, 'sparkle');
   }
 
+  sfxServe();
+  setTimeout(sfxCoins, 300);
   showFeedback(`+${total} mincí`, 'coins');
   if (tip > 0) setTimeout(() => showFeedback(`+${tip} tip!`, 'coins'), 400);
   if (isFavorite) setTimeout(() => showFeedback('Oblíbené!', 'hearts'), 200);
@@ -1659,6 +1742,7 @@ function checkDailyGoal() {
 }
 
 function endDay() {
+  sfxEndDay();
   const modal = document.getElementById('eod-modal');
   const goalMet = state.dayServed >= state.goal;
   const bonus = goalMet ? Math.floor(state.goal * 3) : 0;
@@ -1739,6 +1823,7 @@ function buyIngredient(id) {
   }
   state.coins -= ing.price;
   state.pantry[id] = (state.pantry[id] || 0) + 1;
+  sfxBuy();
   showFeedback(`+1 ${ing.name}`, 'coins');
   renderMarket();
   renderPantry();
@@ -1906,6 +1991,7 @@ function plantSeedling(plotIndex) {
     return;
   }
   state.coins -= seedling.price;
+  sfxPlant();
   state.garden[plotIndex] = {
     seedlingId: state.selectedSeedling,
     plantedDay: state.day,
@@ -1925,6 +2011,7 @@ function harvestPlot(plotIndex) {
   const amount = seedling.harvest;
   const ingredientId = seedling.produces;
   state.pantry[ingredientId] = (state.pantry[ingredientId] || 0) + amount;
+  sfxHarvest();
   showFeedback(`+${amount} ${INGREDIENTS[ingredientId].name}!`, 'coins');
   state.garden[plotIndex] = { seedlingId: null, plantedDay: 0, stage: 0 };
   renderGarden();
@@ -1995,6 +2082,7 @@ function buyDecor(id) {
   }
   state.coins -= d.price;
   state.ownedDecor.push(id);
+  sfxBuy();
   showFeedback(`${d.name} koupeno!`, 'coins');
   renderDecor();
   updateUI();
@@ -2087,6 +2175,8 @@ function newGame() {
   saveGame();
   startCafe();
 }
+
+document.addEventListener('click', () => initAudio(), { once: true });
 
 function startCafe() {
   document.getElementById('title-screen').classList.remove('active');
