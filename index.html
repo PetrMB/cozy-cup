@@ -738,6 +738,46 @@ button:active { transform: translateY(0) scale(0.97); }
   font-size: 12px;
 }
 
+/* Season visual themes */
+.season-spring #cafe-screen { background: linear-gradient(180deg, #FFF5E6 0%, #F0FFF0 50%); }
+.season-spring .cafe-interior { background: linear-gradient(180deg, #FFF0DC 0%, #E8F5E9 100%); }
+.season-summer #cafe-screen { background: linear-gradient(180deg, #FFFDE7 0%, #FFF8E1 50%); }
+.season-summer .cafe-interior { background: linear-gradient(180deg, #FFF9C4 0%, #FFECB3 100%); }
+.season-autumn #cafe-screen { background: linear-gradient(180deg, #FFF3E0 0%, #FBE9E7 50%); }
+.season-autumn .cafe-interior { background: linear-gradient(180deg, #FFCCBC 0%, #FFE0B2 100%); }
+.season-winter #cafe-screen { background: linear-gradient(180deg, #E8EAF6 0%, #F3E5F5 50%); }
+.season-winter .cafe-interior { background: linear-gradient(180deg, #E8EAF6 0%, #EDE7F6 100%); }
+
+.season-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.season-spring .season-badge { background: #C8E6C9; color: #2E7D32; }
+.season-summer .season-badge { background: #FFF9C4; color: #F57F17; }
+.season-autumn .season-badge { background: #FFCCBC; color: #BF360C; }
+.season-winter .season-badge { background: #D1C4E9; color: #4527A0; }
+
+.festival-banner {
+  background: linear-gradient(135deg, var(--gold), var(--amber));
+  color: var(--dark-mocha);
+  border-radius: 12px;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  animation: festivalPulse 2s ease-in-out infinite;
+  margin-bottom: 8px;
+}
+@keyframes festivalPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); box-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+}
+
 /* ===== END OF DAY MODAL ===== */
 .modal-overlay {
   display: none;
@@ -837,6 +877,8 @@ button:active { transform: translateY(0) scale(0.97); }
     <div class="stat"><span class="stat-icon">&#128197;</span> Den <span id="day">1</span></div>
     <div class="stat" id="time-display"><span class="stat-icon">&#9728;&#65039;</span> <span id="time-label">Ráno</span></div>
   </div>
+
+  <div class="festival-banner" id="festival-banner" style="display:none"></div>
 
   <div class="cafe-interior">
     <div class="steam"></div>
@@ -1003,7 +1045,25 @@ const RECIPES = {
   cookie:       { name: 'Cookie',         needs: ['flour','sugar','chocolate'], sell: 8, emoji: '🍪', type: 'food' },
   toast:        { name: 'Toast s medem',  needs: ['bread','honey'],          sell: 7,  emoji: '🍞', type: 'food' },
   cheesecake:   { name: 'Cheesecake',     needs: ['cheese','sugar','butter'], sell: 18, emoji: '🍰', type: 'food' },
+  // Seasonal
+  iced_coffee:  { name: 'Ledová káva',   needs: ['beans','milk','water'],   sell: 16, emoji: '🧊', type: 'drink', season: 'summer' },
+  lemonade:     { name: 'Limonáda',      needs: ['water','sugar','mint'],   sell: 12, emoji: '🍋', type: 'drink', season: 'summer' },
+  pumpkin_latte:{ name: 'Dýňové latté',  needs: ['beans','milk','sugar'],   sell: 20, emoji: '🎃', type: 'drink', season: 'autumn' },
+  apple_tea:    { name: 'Jablečný čaj',  needs: ['water','honey','sugar'],  sell: 12, emoji: '🍎', type: 'drink', season: 'autumn' },
+  hot_choco:    { name: 'Horká čoko',    needs: ['cocoa','milk','sugar'],   sell: 16, emoji: '🍫', type: 'drink', season: 'winter' },
+  gingerbread:  { name: 'Perníček',      needs: ['flour','honey','butter'], sell: 14, emoji: '🍪', type: 'food',  season: 'winter' },
+  flower_tea:   { name: 'Květinový čaj', needs: ['water','honey','mint'],   sell: 12, emoji: '🌸', type: 'drink', season: 'spring' },
+  fruit_muffin: { name: 'Ovocný muffin', needs: ['flour','sugar','egg'],    sell: 14, emoji: '🫐', type: 'food',  season: 'spring' },
 };
+
+const SEASONS = {
+  spring: { name: 'Jaro',   emoji: '🌸', colors: { bg: '#F0FFF0', accent: '#81C784' }, festival: 'Květinový festival' },
+  summer: { name: 'Léto',   emoji: '☀️', colors: { bg: '#FFFDE7', accent: '#FFD54F' }, festival: 'Letní slavnost' },
+  autumn: { name: 'Podzim', emoji: '🍂', colors: { bg: '#FFF3E0', accent: '#FF8A65' }, festival: 'Dýňový festival' },
+  winter: { name: 'Zima',   emoji: '❄️', colors: { bg: '#E8EAF6', accent: '#9FA8DA' }, festival: 'Zimní trhy' },
+};
+const SEASON_ORDER = ['spring', 'summer', 'autumn', 'winter'];
+const DAYS_PER_SEASON = 7;
 
 const SEEDLINGS = {
   coffee:   { name: 'Kávovník',    emoji: '🌱', price: 8,  growDays: 3, produces: 'beans',  harvest: 3, stages: ['🌱','🌿','☕'] },
@@ -1356,11 +1416,19 @@ function canMakeRecipe(recipeId) {
   return Object.entries(needed).every(([id, count]) => (state.pantry[id] || 0) >= count);
 }
 
+function getAvailableRecipes() {
+  const season = getCurrentSeason();
+  return Object.keys(RECIPES).filter(id => {
+    const r = RECIPES[id];
+    return !r.season || r.season === season;
+  });
+}
+
 function pickRecipeForCustomer(customerId) {
   const c = CUSTOMERS[customerId];
-  const recipeKeys = Object.keys(RECIPES);
-  const makeable = recipeKeys.filter(canMakeRecipe);
-  if (makeable.length === 0) return recipeKeys[Math.floor(Math.random() * recipeKeys.length)];
+  const available = getAvailableRecipes();
+  const makeable = available.filter(canMakeRecipe);
+  if (makeable.length === 0) return available[Math.floor(Math.random() * available.length)];
   if (Math.random() < 0.4 && c.favorite && makeable.includes(c.favorite)) return c.favorite;
   return makeable[Math.floor(Math.random() * makeable.length)];
 }
@@ -1501,7 +1569,8 @@ function serve() {
   const isFavorite = state.currentOrder === customer.favorite;
   const favBonus = isFavorite ? 5 : 0;
   const repBonus = getReputation();
-  const tip = Math.round(recipe.sell * (customer.tipMultiplier - 1)) + speedBonus + friendBonus + favBonus + repBonus;
+  const festivalMultiplier = isFestivalDay() ? 2 : 1;
+  const tip = (Math.round(recipe.sell * (customer.tipMultiplier - 1)) + speedBonus + friendBonus + favBonus + repBonus) * festivalMultiplier;
   const total = recipe.sell + tip;
 
   state.coins += total;
@@ -1605,13 +1674,21 @@ function endDay() {
   const bonus = goalMet ? Math.floor(state.goal * 3) : 0;
   if (bonus > 0) state.coins += bonus;
 
-  const nextDay = state.day + 1;
+  const nd = state.day + 1;
   const newCustomers = Object.entries(CUSTOMERS)
-    .filter(([id, c]) => c.unlocksAtDay === nextDay)
+    .filter(([id, c]) => c.unlocksAtDay === nd)
     .map(([id, c]) => c.name);
   const unlockMsg = newCustomers.length > 0
     ? `<br><strong>Nový zákazník: ${newCustomers.join(', ')}!</strong>`
     : '';
+
+  const currentSeason = getCurrentSeason();
+  const nextSeasonIdx = (SEASON_ORDER.indexOf(currentSeason) + 1) % 4;
+  const isSeasonEnd = getDayInSeason() === DAYS_PER_SEASON;
+  const seasonMsg = isSeasonEnd
+    ? `<br><strong>${SEASONS[currentSeason].emoji} ${SEASONS[currentSeason].name} končí — přichází ${SEASONS[SEASON_ORDER[nextSeasonIdx]].emoji} ${SEASONS[SEASON_ORDER[nextSeasonIdx]].name}!</strong>`
+    : '';
+  const festivalMsg = isFestivalDay() ? '<br>🎉 Festivalový den — dvojité tipy!' : '';
 
   document.getElementById('eod-title').textContent = goalMet ? 'Skvělý den!' : 'Konec dne';
   document.getElementById('eod-summary').innerHTML = `
@@ -1619,7 +1696,9 @@ function endDay() {
     Obslouženo: ${state.dayServed} zákazníků<br>
     Vyděláno: ${state.dayEarned} mincí<br>
     ${goalMet ? `<br><strong>Denní cíl splněn! +${bonus} bonus</strong>` : '<br>Příště to bude lepší!'}
+    ${festivalMsg}
     ${unlockMsg}
+    ${seasonMsg}
   `;
   modal.classList.add('active');
   saveGame();
@@ -1690,11 +1769,43 @@ function renderPantry() {
   }).join('');
 }
 
+// ===== SEASONS =====
+function getCurrentSeason() {
+  const seasonIndex = Math.floor((state.day - 1) / DAYS_PER_SEASON) % 4;
+  return SEASON_ORDER[seasonIndex];
+}
+
+function getDayInSeason() {
+  return ((state.day - 1) % DAYS_PER_SEASON) + 1;
+}
+
+function isFestivalDay() {
+  return getDayInSeason() === DAYS_PER_SEASON;
+}
+
+function applySeason() {
+  const season = getCurrentSeason();
+  const s = SEASONS[season];
+  document.body.className = `season-${season}`;
+  const timeLabel = document.getElementById('time-label');
+  if (timeLabel) timeLabel.textContent = `${s.emoji} ${s.name} (${getDayInSeason()}/${DAYS_PER_SEASON})`;
+  const banner = document.getElementById('festival-banner');
+  if (banner) {
+    if (isFestivalDay()) {
+      banner.style.display = 'block';
+      banner.textContent = `🎉 ${s.festival}! Dvojité tipy dnes! 🎉`;
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+}
+
 // ===== UI =====
 function updateUI() {
   document.getElementById('coins').textContent = state.coins;
   document.getElementById('day').textContent = state.day;
   checkDailyGoal();
+  applySeason();
 }
 
 // ===== GARDEN =====
