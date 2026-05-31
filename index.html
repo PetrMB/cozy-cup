@@ -931,12 +931,6 @@ button:active { transform: translateY(0) scale(0.97); }
     </div>
   </div>
 
-  <nav class="nav-bar">
-    <button class="nav-btn active" onclick="switchTab('cafe')"><span class="nav-icon">&#9749;</span>Kavárna</button>
-    <button class="nav-btn" onclick="switchTab('market')"><span class="nav-icon">&#127978;</span>Trh</button>
-    <button class="nav-btn" onclick="switchTab('garden')"><span class="nav-icon">&#127793;</span>Zahrádka</button>
-    <button class="nav-btn" onclick="switchTab('decor')"><span class="nav-icon">&#127912;</span>Dekorace</button>
-  </nav>
 </div>
 
 <!-- MARKET SCREEN -->
@@ -949,10 +943,7 @@ button:active { transform: translateY(0) scale(0.97); }
 
   <div class="market-grid" id="market-grid"></div>
 
-  <nav class="nav-bar">
-    <button class="nav-btn" onclick="switchTab('cafe')"><span class="nav-icon">&#9749;</span>Kavárna</button>
-    <button class="nav-btn active" onclick="switchTab('market')"><span class="nav-icon">&#127978;</span>Trh</button>
-  </nav>
+
 </div>
 
 <!-- GARDEN SCREEN -->
@@ -973,11 +964,7 @@ button:active { transform: translateY(0) scale(0.97); }
     <div class="seedling-grid" id="seedling-grid"></div>
   </div>
 
-  <nav class="nav-bar">
-    <button class="nav-btn" onclick="switchTab('cafe')"><span class="nav-icon">&#9749;</span>Kavárna</button>
-    <button class="nav-btn" onclick="switchTab('market')"><span class="nav-icon">&#127978;</span>Trh</button>
-    <button class="nav-btn active" onclick="switchTab('garden')"><span class="nav-icon">&#127793;</span>Zahrádka</button>
-  </nav>
+
 </div>
 
 <!-- DECOR SCREEN -->
@@ -997,13 +984,16 @@ button:active { transform: translateY(0) scale(0.97); }
   <div class="decor-categories" id="decor-categories"></div>
   <div class="decor-grid" id="decor-grid"></div>
 
-  <nav class="nav-bar">
-    <button class="nav-btn" onclick="switchTab('cafe')"><span class="nav-icon">&#9749;</span>Kavárna</button>
-    <button class="nav-btn" onclick="switchTab('market')"><span class="nav-icon">&#127978;</span>Trh</button>
-    <button class="nav-btn" onclick="switchTab('garden')"><span class="nav-icon">&#127793;</span>Zahrádka</button>
-    <button class="nav-btn active" onclick="switchTab('decor')"><span class="nav-icon">&#127912;</span>Dekorace</button>
-  </nav>
+
 </div>
+
+<!-- SHARED NAV BAR -->
+<nav class="nav-bar" id="main-nav" style="display:none">
+  <button class="nav-btn active" data-tab="cafe" onclick="switchTab('cafe')"><span class="nav-icon">&#9749;</span>Kavárna</button>
+  <button class="nav-btn" data-tab="market" onclick="switchTab('market')"><span class="nav-icon">&#127978;</span>Trh</button>
+  <button class="nav-btn" data-tab="garden" onclick="switchTab('garden')"><span class="nav-icon">&#127793;</span>Zahrádka</button>
+  <button class="nav-btn" data-tab="decor" onclick="switchTab('decor')"><span class="nav-icon">&#127912;</span>Dekorace</button>
+</nav>
 
 <!-- END OF DAY MODAL -->
 <div class="modal-overlay" id="eod-modal">
@@ -2016,10 +2006,8 @@ function switchTab(tab) {
   document.getElementById('market-screen').classList.toggle('active', tab === 'market');
   document.getElementById('garden-screen').classList.toggle('active', tab === 'garden');
   document.getElementById('decor-screen').classList.toggle('active', tab === 'decor');
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.classList.remove('active');
-    const btnTab = btn.getAttribute('onclick')?.includes(tab);
-    if (btnTab) btn.classList.add('active');
+  document.querySelectorAll('#main-nav .nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
   });
   if (tab === 'market') renderMarket();
   if (tab === 'garden') renderGarden();
@@ -2103,6 +2091,7 @@ function newGame() {
 function startCafe() {
   document.getElementById('title-screen').classList.remove('active');
   document.getElementById('cafe-screen').classList.add('active');
+  document.getElementById('main-nav').style.display = 'flex';
   updateUI();
   renderPantry();
   setTimeout(() => spawnCustomer(), 800);
